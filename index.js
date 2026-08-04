@@ -294,7 +294,6 @@ function createUi() {
         el('div', { className: 'inline-drawer-icon fa-solid fa-circle-chevron-down down' }),
     ]);
     const drawerContent = el('div', { className: 'inline-drawer-content reasoning-fixer-panel' });
-    drawerContent.style.display = 'none';
     state.container = drawer;
 
     const currentSelect = el('select', { id: 'reasoning_fixer_current_profile', className: 'text_pole' });
@@ -463,16 +462,6 @@ function createUi() {
             el('div', { className: 'reasoning-fixer-button-row' }, [repairChatButton]),
         ]),
     );
-
-    drawerToggle.addEventListener('click', () => {
-        const isHidden = drawerContent.style.display === 'none';
-        drawerContent.style.display = isHidden ? 'block' : 'none';
-        const icon = drawerToggle.querySelector('.inline-drawer-icon');
-        if (icon) {
-            icon.classList.toggle('down');
-            icon.classList.toggle('up');
-        }
-    });
 
     drawer.append(drawerToggle, drawerContent);
     parent.append(drawer);
