@@ -14,7 +14,6 @@ import {
     DEFAULT_PROFILE,
     DEFAULT_SETTINGS,
     EXTENSION_KEY,
-    EXTRACTION_MODES,
     cloneSettings,
     createProfileId,
     getPresetKey,
@@ -176,6 +175,18 @@ function makeFieldLabel(label, input) {
     ]);
 }
 
+function collapsible(title, defaultOpen, children) {
+    const wrapper = el('div', { className: `reasoning-fixer-collapsible${defaultOpen ? ' open' : ''}` });
+    const header = el('div', { className: 'reasoning-fixer-collapsible-header' }, [
+        el('span', { className: 'reasoning-fixer-collapsible-icon', html: '&#9654;' }),
+        el('span', { text: title }),
+    ]);
+    const body = el('div', { className: 'reasoning-fixer-collapsible-body' }, children);
+    header.addEventListener('click', () => wrapper.classList.toggle('open'));
+    wrapper.append(header, body);
+    return wrapper;
+}
+
 function profileOptions(select, includeAuto = false) {
     select.replaceChildren();
     if (includeAuto) {
@@ -223,15 +234,13 @@ function renderProfileEditor() {
     state.editingProfileId = profile.id;
 
     const nameInput = state.container.querySelector('#reasoning_fixer_profile_name');
-    const extractionModeInput = state.container.querySelector('#reasoning_fixer_extraction_mode');
     const preserveInput = state.container.querySelector('#reasoning_fixer_preserve_tags');
     const caseInput = state.container.querySelector('#reasoning_fixer_case_sensitive');
     const nestedInput = state.container.querySelector('#reasoning_fixer_allow_nested');
     const tagsContainer = state.container.querySelector('#reasoning_fixer_tags');
-    if (!nameInput || !extractionModeInput || !preserveInput || !caseInput || !nestedInput || !tagsContainer) return;
+    if (!nameInput || !preserveInput || !caseInput || !nestedInput || !tagsContainer) return;
 
     nameInput.value = profile.name;
-    extractionModeInput.value = profile.extractionMode;
     preserveInput.checked = profile.preserveTags;
     caseInput.checked = profile.caseSensitive;
     nestedInput.checked = profile.allowNested;
@@ -285,7 +294,6 @@ function createUi() {
     const currentSelect = el('select', { id: 'reasoning_fixer_current_profile', className: 'text_pole' });
     const editSelect = el('select', { id: 'reasoning_fixer_edit_profile', className: 'text_pole' });
     const profileName = el('input', { id: 'reasoning_fixer_profile_name', type: 'text', className: 'text_pole' });
-    const extractionMode = el('select', { id: 'reasoning_fixer_extraction_mode', className: 'text_pole' });
     const preserveTags = el('input', { id: 'reasoning_fixer_preserve_tags', type: 'checkbox' });
     const caseSensitive = el('input', { id: 'reasoning_fixer_case_sensitive', type: 'checkbox' });
     const allowNested = el('input', { id: 'reasoning_fixer_allow_nested', type: 'checkbox' });
@@ -306,16 +314,6 @@ function createUi() {
     const unbindPreset = button('解除当前绑定');
     const repairChatButton = button('修复当前聊天');
 
-    extractionMode.append(
-        el('option', {
-            value: EXTRACTION_MODES.FROM_FIRST_TAG,
-            text: '从第一个配置标签移动到末尾（推荐）',
-        }),
-        el('option', {
-            value: EXTRACTION_MODES.CONFIGURED_BLOCKS,
-            text: '只移动已闭合的配置标签块',
-        }),
-    );
 
     currentSelect.addEventListener('change', () => {
         if (currentSelect.value === AUTO_PROFILE_ID) {
@@ -338,13 +336,6 @@ function createUi() {
         const profile = state.settings.profiles[state.editingProfileId];
         if (!profile) return;
         profile.name = profileName.value;
-        persistSettings();
-        refreshUiState();
-    });
-    extractionMode.addEventListener('change', () => {
-        const profile = state.settings.profiles[state.editingProfileId];
-        if (!profile) return;
-        profile.extractionMode = extractionMode.value;
         persistSettings();
         refreshUiState();
     });
@@ -434,35 +425,40 @@ function createUi() {
     repairChatButton.addEventListener('click', () => repairCurrentChat('manual'));
 
     container.append(
-        el('h4', { className: 'reasoning-fixer-title', text: 'Reasoning Fixer' }),
-        status,
-        makeFieldLabel('启用扩展', enabled),
-        makeFieldLabel('收到消息时自动修复', repairOnMessage),
-        makeFieldLabel('切换聊天时修复全部历史消息', repairExisting),
-        makeFieldLabel('调试日志', debugInput),
-        el('hr'),
-        el('h5', { text: '当前聊天档案' }),
-        makeFieldLabel('使用档案', currentSelect),
-        el('h5', { text: '档案编辑器' }),
-        makeFieldLabel('编辑档案', editSelect),
-        makeFieldLabel('档案名称', profileName),
-        makeFieldLabel('提取模式', extractionMode),
-        makeFieldLabel('全局保留标签', preserveTags),
-        makeFieldLabel('大小写敏感', caseSensitive),
-        makeFieldLabel('允许嵌套标签', allowNested),
-        el('div', { className: 'reasoning-fixer-section-label', text: '迁移/起始标签' }),
-        el('div', {
-            className: 'reasoning-fixer-help',
-            text: '整段模式只需填写可能出现在正文最前面的最外层标签；起点之后的内部标签会整体保留。',
-        }),
-        tags,
-        el('div', { className: 'reasoning-fixer-button-row' }, [addTag]),
-        el('div', { className: 'reasoning-fixer-button-row' }, [saveProfile, newProfile, duplicateProfile, deleteProfile]),
-        el('h5', { text: '预设绑定' }),
-        bindingStatus,
-        el('div', { className: 'reasoning-fixer-button-row' }, [bindPreset, unbindPreset]),
-        el('h5', { text: '手动操作' }),
-        el('div', { className: 'reasoning-fixer-button-row' }, [repairChatButton]),
+        el('div', { className: 'reasoning-fixer-header' }, [
+            el('h4', { className: 'reasoning-fixer-title', text: 'Reasoning Fixer' }),
+            status,
+        ]),
+        collapsible('基本设置', true, [
+            makeFieldLabel('启用扩展', enabled),
+            makeFieldLabel('收到消息时自动修复', repairOnMessage),
+            makeFieldLabel('切换聊天时修复全部历史消息', repairExisting),
+            makeFieldLabel('调试日志', debugInput),
+        ]),
+        collapsible('档案管理', true, [
+            makeFieldLabel('当前聊天档案', currentSelect),
+            el('hr'),
+            makeFieldLabel('编辑档案', editSelect),
+            makeFieldLabel('档案名称', profileName),
+            makeFieldLabel('全局保留标签', preserveTags),
+            makeFieldLabel('大小写敏感', caseSensitive),
+            makeFieldLabel('允许嵌套标签', allowNested),
+            el('div', { className: 'reasoning-fixer-section-label', text: '起始标签' }),
+            el('div', {
+                className: 'reasoning-fixer-help',
+                text: '填写可能出现在正文最前面的最外层标签名；起点之后的内部标签会整体保留。',
+            }),
+            tags,
+            el('div', { className: 'reasoning-fixer-button-row' }, [addTag]),
+            el('div', { className: 'reasoning-fixer-button-row' }, [saveProfile, newProfile, duplicateProfile, deleteProfile]),
+        ]),
+        collapsible('预设绑定', false, [
+            bindingStatus,
+            el('div', { className: 'reasoning-fixer-button-row' }, [bindPreset, unbindPreset]),
+        ]),
+        collapsible('手动操作', false, [
+            el('div', { className: 'reasoning-fixer-button-row' }, [repairChatButton]),
+        ]),
     );
 
     parent.append(container);
@@ -510,7 +506,7 @@ function init() {
     installEvents();
     refreshPresetContext();
     refreshUiState();
-    debug('Initialized', { version: '0.2.0' });
+    debug('Initialized', { version: '0.3.0' });
 }
 
 if (document.readyState === 'loading') {

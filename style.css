@@ -1,24 +1,77 @@
 .reasoning-fixer-panel {
-    padding: 0.75rem;
+    padding: 0.5rem 0;
+}
+
+.reasoning-fixer-header {
+    margin-bottom: 0.25rem;
 }
 
 .reasoning-fixer-title {
-    margin: 0 0 0.4rem;
+    margin: 0 0 0.15rem;
 }
 
 .reasoning-fixer-status {
-    opacity: 0.75;
-    font-size: 0.85em;
-    margin-bottom: 0.5rem;
+    opacity: 0.7;
+    font-size: 0.82em;
+    margin-bottom: 0.15rem;
     overflow-wrap: anywhere;
+    line-height: 1.4;
 }
+
+/* ── Collapsible sections ── */
+
+.reasoning-fixer-collapsible {
+    margin: 0.3rem 0;
+    border: 1px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.08));
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.reasoning-fixer-collapsible-header {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.42rem 0.6rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.92em;
+    user-select: none;
+    background: var(--SmartThemeBlurTintColor, rgba(255, 255, 255, 0.04));
+    transition: background 0.15s ease;
+}
+
+.reasoning-fixer-collapsible-header:hover {
+    filter: brightness(1.2);
+}
+
+.reasoning-fixer-collapsible-icon {
+    font-size: 0.6em;
+    transition: transform 0.2s ease;
+    display: inline-block;
+    opacity: 0.7;
+}
+
+.reasoning-fixer-collapsible.open > .reasoning-fixer-collapsible-header > .reasoning-fixer-collapsible-icon {
+    transform: rotate(90deg);
+}
+
+.reasoning-fixer-collapsible-body {
+    display: none;
+    padding: 0.45rem 0.6rem 0.5rem;
+}
+
+.reasoning-fixer-collapsible.open > .reasoning-fixer-collapsible-body {
+    display: block;
+}
+
+/* ── Fields ── */
 
 .reasoning-fixer-field {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    margin: 0.35rem 0;
+    margin: 0.3rem 0;
 }
 
 .reasoning-fixer-field > .text_pole,
@@ -28,22 +81,26 @@
 }
 
 .reasoning-fixer-section-label {
-    margin: 0.6rem 0 0.25rem;
+    margin: 0.55rem 0 0.2rem;
     font-weight: 600;
+    font-size: 0.9em;
+    opacity: 0.85;
 }
 
 .reasoning-fixer-help {
-    opacity: 0.75;
-    font-size: 0.85em;
-    line-height: 1.35;
-    margin: 0.25rem 0 0.5rem;
+    opacity: 0.6;
+    font-size: 0.82em;
+    line-height: 1.4;
+    margin: 0.1rem 0 0.4rem;
 }
+
+/* ── Tag rows ── */
 
 .reasoning-fixer-tag-row {
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    margin: 0.3rem 0;
+    margin: 0.25rem 0;
 }
 
 .reasoning-fixer-tag-name {
@@ -56,17 +113,27 @@
     align-items: center;
     gap: 0.25rem;
     white-space: nowrap;
-    font-size: 0.85em;
+    font-size: 0.82em;
 }
+
+/* ── Buttons ── */
 
 .reasoning-fixer-button-row {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
-    margin: 0.45rem 0;
+    margin: 0.35rem 0;
 }
 
 .reasoning-fixer-small-button {
-    font-size: 0.85em;
-    padding: 0.2rem 0.45rem;
+    font-size: 0.82em;
+    padding: 0.2rem 0.5rem;
+}
+
+/* ── Divider inside collapsible ── */
+
+.reasoning-fixer-collapsible-body > hr {
+    border: none;
+    border-top: 1px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.08));
+    margin: 0.45rem 0;
 }

@@ -89,12 +89,7 @@ export function normalizeProfile(profile, fallbackId = createProfileId()) {
     }
 
     const profileId = String(source.id || fallbackId);
-    const defaultMode = profileId === DEFAULT_PROFILE.id
-        ? DEFAULT_PROFILE.extractionMode
-        : EXTRACTION_MODES.CONFIGURED_BLOCKS;
-    const extractionMode = Object.values(EXTRACTION_MODES).includes(source.extractionMode)
-        ? source.extractionMode
-        : defaultMode;
+    const extractionMode = EXTRACTION_MODES.FROM_FIRST_TAG;
 
     return {
         id: profileId,
