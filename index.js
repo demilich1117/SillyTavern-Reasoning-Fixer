@@ -59,6 +59,11 @@ function persistSettings() {
     saveSettingsDebounced();
 }
 
+function persistSettingsLite() {
+    extension_settings[EXTENSION_KEY] = state.settings;
+    saveSettingsDebounced();
+}
+
 function getCurrentPresetContext() {
     const apiId = String(document.querySelector('#main_api')?.value || '').trim();
     const selector = PRESET_SELECTORS[apiId];
@@ -206,14 +211,20 @@ function renderTagRows(profile, tagsContainer) {
         const removeButton = button('删除', 'menu_button reasoning-fixer-small-button');
 
         nameInput.addEventListener('input', () => {
-            tag.name = nameInput.value.trim();
-            persistSettings();
+            const profile = state.settings.profiles[state.editingProfileId];
+            if (!profile?.tags?.[index]) return;
+            profile.tags[index].name = nameInput.value.trim();
+            persistSettingsLite();
         });
         preserveInput.addEventListener('change', () => {
-            tag.preserve = preserveInput.checked;
-            persistSettings();
+            const profile = state.settings.profiles[state.editingProfileId];
+            if (!profile?.tags?.[index]) return;
+            profile.tags[index].preserve = preserveInput.checked;
+            persistSettingsLite();
         });
         removeButton.addEventListener('click', () => {
+            const profile = state.settings.profiles[state.editingProfileId];
+            if (!profile) return;
             profile.tags.splice(index, 1);
             persistSettings();
             renderProfileEditor();
@@ -341,8 +352,12 @@ function createUi() {
         const profile = state.settings.profiles[state.editingProfileId];
         if (!profile) return;
         profile.name = profileName.value;
-        persistSettings();
-        refreshUiState();
+        persistSettingsLite();
+        const editSelect = state.container?.querySelector('#reasoning_fixer_edit_profile');
+        if (editSelect) {
+            const option = editSelect.querySelector(`option[value="${profile.id}"]`);
+            if (option) option.textContent = profile.name;
+        }
     });
     preserveTags.addEventListener('change', () => {
         const profile = state.settings.profiles[state.editingProfileId];
