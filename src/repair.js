@@ -242,9 +242,7 @@ function repairSingleText(message, profile) {
         }
     }
 
-    const extracted = profile?.extractionMode === 'from_first_tag'
-        ? extractFromFirstConfiguredTag(reasoning, profile)
-        : extractConfiguredBlocks(reasoning, profile);
+    const extracted = extractFromFirstConfiguredTag(reasoning, profile);
     if (extracted.blocks.length > 0) {
         movedBlocks.push(...extracted.blocks);
         reasoning = extracted.remaining;
