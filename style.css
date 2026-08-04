@@ -2,18 +2,10 @@
     padding: 0.5rem 0;
 }
 
-.reasoning-fixer-header {
-    margin-bottom: 0.25rem;
-}
-
-.reasoning-fixer-title {
-    margin: 0 0 0.15rem;
-}
-
 .reasoning-fixer-status {
     opacity: 0.7;
     font-size: 0.82em;
-    margin-bottom: 0.15rem;
+    margin-bottom: 0.35rem;
     overflow-wrap: anywhere;
     line-height: 1.4;
 }
@@ -125,7 +117,9 @@
     margin: 0.35rem 0;
 }
 
+.reasoning-fixer-button-row .menu_button,
 .reasoning-fixer-small-button {
+    white-space: nowrap;
     font-size: 0.82em;
     padding: 0.2rem 0.5rem;
 }
