@@ -288,8 +288,14 @@ function createUi() {
     const parent = document.querySelector('#extensions_settings2') || document.querySelector('#extensions_settings');
     if (!parent || document.querySelector(`#${CONTAINER_ID}`)) return;
 
-    const container = el('div', { id: CONTAINER_ID, className: 'extension_container reasoning-fixer-panel' });
-    state.container = container;
+    const drawer = el('div', { id: CONTAINER_ID, className: 'inline-drawer' });
+    const drawerToggle = el('div', { className: 'inline-drawer-toggle inline-drawer-header' }, [
+        el('b', { text: 'Reasoning Fixer' }),
+        el('div', { className: 'inline-drawer-icon fa-solid fa-circle-chevron-down down' }),
+    ]);
+    const drawerContent = el('div', { className: 'inline-drawer-content reasoning-fixer-panel' });
+    drawerContent.style.display = 'none';
+    state.container = drawer;
 
     const currentSelect = el('select', { id: 'reasoning_fixer_current_profile', className: 'text_pole' });
     const editSelect = el('select', { id: 'reasoning_fixer_edit_profile', className: 'text_pole' });
@@ -424,11 +430,8 @@ function createUi() {
     });
     repairChatButton.addEventListener('click', () => repairCurrentChat('manual'));
 
-    container.append(
-        el('div', { className: 'reasoning-fixer-header' }, [
-            el('h4', { className: 'reasoning-fixer-title', text: 'Reasoning Fixer' }),
-            status,
-        ]),
+    drawerContent.append(
+        status,
         collapsible('基本设置', true, [
             makeFieldLabel('启用扩展', enabled),
             makeFieldLabel('收到消息时自动修复', repairOnMessage),
@@ -461,7 +464,18 @@ function createUi() {
         ]),
     );
 
-    parent.append(container);
+    drawerToggle.addEventListener('click', () => {
+        const isHidden = drawerContent.style.display === 'none';
+        drawerContent.style.display = isHidden ? 'block' : 'none';
+        const icon = drawerToggle.querySelector('.inline-drawer-icon');
+        if (icon) {
+            icon.classList.toggle('down');
+            icon.classList.toggle('up');
+        }
+    });
+
+    drawer.append(drawerToggle, drawerContent);
+    parent.append(drawer);
     refreshUiState();
 }
 

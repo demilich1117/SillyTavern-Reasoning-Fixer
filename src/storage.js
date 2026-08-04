@@ -8,9 +8,7 @@ export const EXTRACTION_MODES = Object.freeze({
 });
 
 export const DEFAULT_TAGS = Object.freeze([
-    { name: 'novel_header', preserve: true },
     { name: 'content', preserve: true },
-    { name: 'table_edit', preserve: true },
 ]);
 
 export const DEFAULT_PROFILE = Object.freeze({
