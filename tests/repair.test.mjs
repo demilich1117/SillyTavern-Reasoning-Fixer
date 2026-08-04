@@ -68,7 +68,7 @@ test('moves the complete suffix from the first configured tag', () => {
         message.mes,
         '<novel_header>标题</novel_header>\n<content>正文</content>\n<table_edit>表格内容</table_edit>',
     );
-    assert.equal(message.extra.reasoning, undefined);
+    assert.equal(message.extra.reasoning, '先分析。');
 });
 
 test('keeps unconfigured nested MVU tags without listing each one', () => {
@@ -87,7 +87,7 @@ test('keeps unconfigured nested MVU tags without listing each one', () => {
     repairMessage(message, boundaryProfile);
     assert.match(message.mes, /<Analystic>说明<\/Analystic>/);
     assert.match(message.mes, /<JsonPatch>\[\{"op":"add"\}\]<\/JsonPatch>/);
-    assert.equal(message.extra.reasoning, undefined);
+    assert.equal(message.extra.reasoning, '分析');
 });
 
 test('is idempotent', () => {

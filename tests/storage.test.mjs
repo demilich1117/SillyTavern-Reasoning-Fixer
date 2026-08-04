@@ -48,16 +48,16 @@ test('uses manual chat selection before preset binding and default', () => {
 
 test('keeps the shipped default profile useful', () => {
     const settings = normalizeSettings({});
-    assert.equal(settings.profiles[DEFAULT_PROFILE.id].tags.length, 3);
+    assert.equal(settings.profiles[DEFAULT_PROFILE.id].tags.length, 1);
     assert.equal(settings.profiles[DEFAULT_PROFILE.id].extractionMode, EXTRACTION_MODES.FROM_FIRST_TAG);
 });
 
-test('keeps explicitly configured legacy profiles in exact-block mode', () => {
+test('normalizes user profiles to from_first_tag mode', () => {
     const settings = normalizeSettings({
         profiles: {
-            legacy: { id: 'legacy', name: '旧模式', tags: ['content'] },
+            custom: { id: 'custom', name: '自定义', tags: ['content'] },
         },
-        defaultProfileId: 'legacy',
+        defaultProfileId: 'custom',
     });
-    assert.equal(settings.profiles.legacy.extractionMode, EXTRACTION_MODES.CONFIGURED_BLOCKS);
+    assert.equal(settings.profiles.custom.extractionMode, EXTRACTION_MODES.FROM_FIRST_TAG);
 });

@@ -195,7 +195,7 @@ export function extractFromFirstConfiguredTag(source, profile) {
 
         const config = getTagConfig(profile, match[2]);
         return {
-            remaining: '',
+            remaining: trimText(input.slice(0, match.index)),
             blocks: [{
                 value: input.slice(match.index),
                 tag: String(config.name),
