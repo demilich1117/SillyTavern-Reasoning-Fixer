@@ -71,6 +71,56 @@ test('moves the complete suffix from the first configured tag', () => {
     assert.equal(message.extra.reasoning, '先分析。');
 });
 
+test('skips an unclosed draft mention of the selected start tag', () => {
+    const boundaryProfile = {
+        ...profile,
+        extractionMode: 'from_first_tag',
+        tags: [{ name: 'novel_header', preserve: true }],
+    };
+    const draft = [
+        '规划输出结构：',
+        ' -> <novel_header>',
+        ' -> <content>（含锚定）',
+        ' -> <UpdateVariable>',
+        ' -> <tableEdit>',
+        ' -> <branches>',
+        '继续思考。',
+    ].join('\n');
+    const output = '<novel_header>标题</novel_header>\n<content>正文</content>';
+    const message = {
+        is_user: false,
+        mes: '',
+        extra: { reasoning: `${draft}\n${output}` },
+    };
+
+    const result = repairMessage(message, boundaryProfile);
+
+    assert.equal(result.changed, true);
+    assert.equal(message.mes, output);
+    assert.equal(message.extra.reasoning, draft);
+});
+
+test('skips an earlier complete draft block with the selected start tag', () => {
+    const boundaryProfile = {
+        ...profile,
+        extractionMode: 'from_first_tag',
+        tags: [{ name: 'novel_header', preserve: true }],
+    };
+    const draft = '<novel_header>草稿标题</novel_header>\n继续检查草稿。';
+    const output = '<novel_header>正式标题</novel_header>\n<content>正式正文</content>';
+    const message = {
+        is_user: false,
+        mes: '',
+        extra: { reasoning: `${draft}\n${output}` },
+    };
+
+    const result = repairMessage(message, boundaryProfile);
+
+    assert.equal(result.changed, true);
+    assert.equal(message.mes, output);
+    assert.equal(message.extra.reasoning, draft);
+});
+
 test('keeps unconfigured nested MVU tags without listing each one', () => {
     const boundaryProfile = {
         ...profile,
