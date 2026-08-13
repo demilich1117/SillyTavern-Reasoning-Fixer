@@ -26,7 +26,7 @@ No server route or additional listening port is required.
 1. Select the effective profile using the current chat override, preset binding, or global default.
 2. If the visible message has a conventional leading `<think>`, `<thinking>`, `<reasoning>`, or `<analysis>` envelope, split it into `message.extra.reasoning` and `message.mes`.
 3. Apply the profile extraction mode to `message.extra.reasoning`:
-   - `from_first_tag`: find the first configured opening tag and move its complete suffix;
+   - `from_first_tag`: choose the first configured start-tag name encountered, use its last opening occurrence as the boundary (earlier duplicates are treated as draft mentions), and move the complete suffix;
    - `configured_blocks`: scan for complete configured blocks.
 4. Move the extracted content to `message.mes`. In first-tag mode the suffix is kept intact, including unknown nested tags.
 5. Remove empty reasoning metadata and synchronize the selected swipe.

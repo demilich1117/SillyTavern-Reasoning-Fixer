@@ -176,7 +176,9 @@ export function extractConfiguredBlocks(source, profile) {
 }
 
 /**
- * Moves everything from the first configured opening tag to the end.
+ * Moves everything from the first viable configured opening tag to the end.
+ * If that same start tag appears more than once, earlier occurrences are
+ * treated as draft mentions and the last occurrence becomes the boundary.
  * This mode intentionally does not parse the suffix, so nested or unknown
  * tags such as MVU's Analystic and JsonPatch blocks remain intact.
  * @param {string} source
@@ -188,24 +190,48 @@ export function extractFromFirstConfiguredTag(source, profile) {
     const tokenRegex = getTagTokenRegex(profile);
     if (!tokenRegex) return { remaining: input, blocks: [] };
 
+    let candidate = null;
+    let candidateName = null;
     let match;
     while ((match = tokenRegex.exec(input)) !== null) {
         const isClosing = match[1] === '/';
+        const isSelfClosing = match[3] === '/';
+        if (isSelfClosing) continue;
+
+        const comparable = profile.caseSensitive === true ? match[2] : match[2].toLowerCase();
+        if (!candidate) {
+            if (isClosing) continue;
+            candidate = {
+                match,
+                config: getTagConfig(profile, match[2]),
+            };
+            candidateName = comparable;
+            continue;
+        }
+
+        if (comparable !== candidateName) continue;
+
         if (isClosing) continue;
 
-        const config = getTagConfig(profile, match[2]);
-        return {
-            remaining: trimText(input.slice(0, match.index)),
-            blocks: [{
-                value: input.slice(match.index),
-                tag: String(config.name),
-                start: match.index,
-                end: input.length,
-            }],
+        // Start tags are expected to be unique in the final output. If the same
+        // one occurs again, the earlier occurrence was likely part of a draft.
+        candidate = {
+            match,
+            config: getTagConfig(profile, match[2]),
         };
     }
 
-    return { remaining: input, blocks: [] };
+    if (!candidate) return { remaining: input, blocks: [] };
+
+    return {
+        remaining: trimText(input.slice(0, candidate.match.index)),
+        blocks: [{
+            value: input.slice(candidate.match.index),
+            tag: String(candidate.config.name),
+            start: candidate.match.index,
+            end: input.length,
+        }],
+    };
 }
 
 function clearReasoningMetadata(extra) {
