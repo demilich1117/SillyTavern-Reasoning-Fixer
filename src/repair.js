@@ -75,6 +75,46 @@ function getTagConfig(profile, name) {
     }) || { name, preserve: true };
 }
 
+function isLikelyTagSequenceMention(input, match) {
+    const lineStart = input.lastIndexOf('\n', match.index - 1) + 1;
+    const nextLineBreak = input.indexOf('\n', match.index + match[0].length);
+    const lineEnd = nextLineBreak < 0 ? input.length : nextLineBreak;
+    const line = input.slice(lineStart, lineEnd);
+    const matchOffset = match.index - lineStart;
+    const before = line.slice(0, matchOffset);
+    const after = line.slice(matchOffset + match[0].length);
+    const arrow = /(?:-{1,2}>|→)/;
+
+    // Models commonly describe their planned output as either a per-line list
+    // ("-> <content>") or an inline chain ("<header> -> <content>").
+    // Those tags are references to the schema, not final-output boundaries.
+    if (/^(?:-{1,2}>|→)/.test(after.trimStart()) || /(?:-{1,2}>|→)\s*$/.test(before)) {
+        return true;
+    }
+
+    const tagTokens = line.match(/<\s*(?!\/)\s*[A-Za-z][^<>]*>/g) || [];
+    return arrow.test(line) && tagTokens.length > 1;
+}
+
+function containsConfiguredOpeningTag(source, profile, expectedName) {
+    const tokenRegex = getTagTokenRegex(profile);
+    if (!tokenRegex) return false;
+
+    const comparableExpected = profile.caseSensitive === true
+        ? String(expectedName)
+        : String(expectedName).toLowerCase();
+    let match;
+    while ((match = tokenRegex.exec(String(source ?? ''))) !== null) {
+        const isClosing = match[1] === '/';
+        const isSelfClosing = match[3] === '/';
+        const comparable = profile.caseSensitive === true ? match[2] : match[2].toLowerCase();
+        if (!isClosing && !isSelfClosing && comparable === comparableExpected) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /**
  * Finds complete configured tag blocks and removes them from the source.
  * Unclosed blocks are intentionally left untouched for safety.
@@ -198,6 +238,10 @@ export function extractFromFirstConfiguredTag(source, profile) {
         const isSelfClosing = match[3] === '/';
         if (isSelfClosing) continue;
 
+        if (!isClosing && isLikelyTagSequenceMention(input, match)) {
+            continue;
+        }
+
         const comparable = profile.caseSensitive === true ? match[2] : match[2].toLowerCase();
         if (!candidate) {
             if (isClosing) continue;
@@ -269,10 +313,15 @@ function repairSingleText(message, profile) {
     }
 
     const extracted = extractFromFirstConfiguredTag(reasoning, profile);
-    if (extracted.blocks.length > 0) {
+    const contentTrimmed = trimText(content);
+    const extractedTagAlreadyVisible = extracted.blocks.length > 0
+        && containsConfiguredOpeningTag(content, profile, extracted.blocks[0].tag);
+    const extractedBlockAlreadyVisible = extracted.blocks.length > 0
+        && extracted.blocks.every((block) => contentTrimmed.includes(trimText(block.value)));
+    const visibleTagHasDifferentContent = extractedTagAlreadyVisible && !extractedBlockAlreadyVisible;
+    if (extracted.blocks.length > 0 && !visibleTagHasDifferentContent) {
         movedBlocks.push(...extracted.blocks);
         reasoning = extracted.remaining;
-        const contentTrimmed = trimText(content);
         const blocksToAppend = extracted.blocks
             .map((block) => block.value)
             .filter((value) => !contentTrimmed.includes(trimText(value)));
