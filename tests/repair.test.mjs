@@ -121,6 +121,71 @@ test('skips an earlier complete draft block with the selected start tag', () => 
     assert.equal(message.extra.reasoning, draft);
 });
 
+test('does not move an arrow-linked tag sequence from reasoning', () => {
+    const boundaryProfile = {
+        ...profile,
+        extractionMode: 'from_first_tag',
+        tags: [{ name: 'novel_header', preserve: true }],
+    };
+    const draft = [
+        '规划最终输出顺序：',
+        '<novel_header> -> 风格/剧情锚定 -> <content> -> 进度/写作锚定 -> <branches> -> <UpdateVariable> -> <tableEdit>。',
+        '继续推演剧情。',
+    ].join('\n');
+    const message = {
+        is_user: false,
+        mes: '',
+        extra: { reasoning: draft },
+    };
+
+    const result = repairMessage(message, boundaryProfile);
+
+    assert.equal(result.changed, false);
+    assert.equal(message.mes, '');
+    assert.equal(message.extra.reasoning, draft);
+});
+
+test('still moves ordinary tagged content that contains an arrow', () => {
+    const boundaryProfile = {
+        ...profile,
+        extractionMode: 'from_first_tag',
+        tags: [{ name: 'novel_header', preserve: true }],
+    };
+    const output = '<novel_header>主标题 -> 副标题</novel_header>\n<content>正文</content>';
+    const message = {
+        is_user: false,
+        mes: '',
+        extra: { reasoning: `分析。\n${output}` },
+    };
+
+    const result = repairMessage(message, boundaryProfile);
+
+    assert.equal(result.changed, true);
+    assert.equal(message.mes, output);
+    assert.equal(message.extra.reasoning, '分析。');
+});
+
+test('does not move a draft tag when the real start tag is already visible', () => {
+    const boundaryProfile = {
+        ...profile,
+        extractionMode: 'from_first_tag',
+        tags: [{ name: 'novel_header', preserve: true }],
+    };
+    const draft = '先用 <novel_header> 标记标题，随后再组织正文。';
+    const output = '<novel_header>正式标题</novel_header>\n<content>正式正文</content>';
+    const message = {
+        is_user: false,
+        mes: output,
+        extra: { reasoning: draft },
+    };
+
+    const result = repairMessage(message, boundaryProfile);
+
+    assert.equal(result.changed, false);
+    assert.equal(message.mes, output);
+    assert.equal(message.extra.reasoning, draft);
+});
+
 test('keeps unconfigured nested MVU tags without listing each one', () => {
     const boundaryProfile = {
         ...profile,
