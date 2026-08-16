@@ -7,6 +7,7 @@ import {
     extractReasoningEnvelope,
     repairMessage,
 } from '../src/repair.js';
+import { normalizeProfile } from '../src/storage.js';
 
 const profile = {
     id: 'novel',
@@ -45,6 +46,25 @@ test('moves configured structured blocks and retains reasoning', () => {
     assert.match(message.mes, /<content>正文<\/content>/);
     assert.match(message.mes, /<table_edit>表格内容<\/table_edit>/);
     assert.equal(message.extra.reasoning, '先分析。');
+});
+
+test('repairs content with a profile configured using a wrapped tag name', () => {
+    const wrappedProfile = normalizeProfile({
+        id: 'wrapped',
+        name: '包裹标签配置',
+        tags: ['<content>'],
+    }, 'wrapped');
+    const message = {
+        is_user: false,
+        mes: '',
+        extra: { reasoning: '分析过程\n<content>正文</content>' },
+    };
+
+    const result = repairMessage(message, wrappedProfile);
+
+    assert.equal(result.changed, true);
+    assert.equal(message.extra.reasoning, '分析过程');
+    assert.equal(message.mes, '<content>正文</content>');
 });
 
 test('moves the complete suffix from the first configured tag', () => {

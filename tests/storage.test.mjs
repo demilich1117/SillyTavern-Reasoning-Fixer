@@ -29,6 +29,47 @@ test('normalizes the default profile and removes invalid tags', () => {
     ]);
 });
 
+test('normalizes wrapped start and closing tags to plain tag names', () => {
+    const settings = normalizeSettings({
+        profiles: {
+            custom: {
+                id: 'custom',
+                name: '自定义',
+                tags: [
+                    ' <content> ',
+                    { name: '</table_edit>', preserve: false },
+                    '<content class="main">',
+                    '<broken',
+                    '<self_closing/>',
+                ],
+            },
+        },
+        defaultProfileId: 'custom',
+    });
+
+    assert.deepEqual(settings.profiles.custom.tags, [
+        { name: 'content', preserve: true },
+        { name: 'table_edit', preserve: false },
+    ]);
+});
+
+test('deduplicates wrapped and plain forms of the same tag', () => {
+    const settings = normalizeSettings({
+        profiles: {
+            custom: {
+                id: 'custom',
+                name: '自定义',
+                tags: ['content', '<CONTENT>', '</content>'],
+            },
+        },
+        defaultProfileId: 'custom',
+    });
+
+    assert.deepEqual(settings.profiles.custom.tags, [
+        { name: 'content', preserve: true },
+    ]);
+});
+
 test('uses manual chat selection before preset binding and default', () => {
     const settings = normalizeSettings({
         profiles: {

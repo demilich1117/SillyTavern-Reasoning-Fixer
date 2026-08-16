@@ -15,7 +15,7 @@ SillyTavern 前端扩展，用于修复模型把正文或结构化输出错误�
 
 迁移后 `<content>正文</content>` 会被移到正文中；前面的推理文字仍会保留在Reasoning。
 
-对于 MVU 等多标签结构，只需填写可能作为最外层起点的标签（如 `<content>`）；其中的 `<Analystic>`、`<JsonPatch>` 等内部标签会随整段一起迁移，不需要逐个配置。
+对于 MVU 等多标签结构，只需在“起始标签”中填写可能作为最外层起点的标签名（如 `content`）；实际输出中的 `<content>` 会被正确识别。其中的 `<Analystic>`、`<JsonPatch>` 等内部标签会随整段一起迁移，不需要逐个配置。误填 `<content>` 或 `</content>` 时，扩展也会自动纠正为 `content`。
 
 插件还会自动处理消息正文开头的常见 reasoning 包裹：
 

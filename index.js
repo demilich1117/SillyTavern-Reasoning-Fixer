@@ -21,6 +21,7 @@ import {
     hasManualProfileOverride,
     normalizeProfile,
     normalizeSettings,
+    normalizeTag,
 } from './src/storage.js';
 
 const CONTAINER_ID = 'reasoning_fixer_container';
@@ -206,7 +207,12 @@ function renderTagRows(profile, tagsContainer) {
     tagsContainer.replaceChildren();
     for (let index = 0; index < profile.tags.length; index++) {
         const tag = profile.tags[index];
-        const nameInput = el('input', { type: 'text', className: 'text_pole reasoning-fixer-tag-name', value: tag.name });
+        const nameInput = el('input', {
+            type: 'text',
+            className: 'text_pole reasoning-fixer-tag-name',
+            value: tag.name,
+            placeholder: 'content',
+        });
         const preserveInput = el('input', { type: 'checkbox', checked: tag.preserve !== false });
         const removeButton = button('删除', 'menu_button reasoning-fixer-small-button');
 
@@ -214,6 +220,15 @@ function renderTagRows(profile, tagsContainer) {
             const profile = state.settings.profiles[state.editingProfileId];
             if (!profile?.tags?.[index]) return;
             profile.tags[index].name = nameInput.value.trim();
+            persistSettingsLite();
+        });
+        nameInput.addEventListener('blur', () => {
+            const profile = state.settings.profiles[state.editingProfileId];
+            if (!profile?.tags?.[index]) return;
+            const normalized = normalizeTag(profile.tags[index]);
+            if (!normalized) return;
+            profile.tags[index] = normalized;
+            nameInput.value = normalized.name;
             persistSettingsLite();
         });
         preserveInput.addEventListener('change', () => {
@@ -463,7 +478,7 @@ function createUi() {
             el('div', { className: 'reasoning-fixer-section-label', text: '起始标签' }),
             el('div', {
                 className: 'reasoning-fixer-help',
-                text: '填写可能出现在正文最前面的最外层标签名；起点之后的内部标签会整体保留。',
+                text: '只需填写标签名，例如 content；填写 <content> 或 </content> 会自动纠正。起点之后的内部标签会整体保留。',
             }),
             tags,
             el('div', { className: 'reasoning-fixer-button-row' }, [addTag]),

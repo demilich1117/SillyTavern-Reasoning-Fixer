@@ -50,9 +50,15 @@ export function isValidTagName(name) {
     return VALID_TAG_NAME.test(String(name ?? '').trim());
 }
 
+function normalizeTagName(name) {
+    const value = String(name ?? '').trim();
+    const wrapped = value.match(/^<\s*\/?\s*([A-Za-z][A-Za-z0-9:_-]*)\s*>$/);
+    return wrapped ? wrapped[1] : value;
+}
+
 export function normalizeTag(tag) {
     if (typeof tag === 'string') {
-        const name = tag.trim();
+        const name = normalizeTagName(tag);
         return isValidTagName(name) ? { name, preserve: true } : null;
     }
 
@@ -60,7 +66,7 @@ export function normalizeTag(tag) {
         return null;
     }
 
-    const name = String(tag.name ?? '').trim();
+    const name = normalizeTagName(tag.name);
     if (!isValidTagName(name)) {
         return null;
     }
