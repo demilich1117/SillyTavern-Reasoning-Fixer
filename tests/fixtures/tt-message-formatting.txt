@@ -1,0 +1,125 @@
+export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, sanitizerOverrides = {}, isReasoning = false, formattingOptions = {}) {
+    if (!mes) {
+        return '';
+    }
+
+    if (!formattingOptions?.regexPrepared) {
+        mes = substituteFirstMessage(mes, ch_name, isSystem, isUser, messageId, isReasoning);
+    }
+
+    mesForShowdownParse = formattingOptions?.regexSourceText ?? mes;
+
+    // Let comment and hidden messages have markdown.
+    isSystem = normalizeMessageSystemFlag(ch_name, isSystem);
+
+    if (!formattingOptions?.regexPrepared) {
+        mes = removeMessagePromptBias(mes, ch_name, isSystem, isUser);
+        if (!isSystem) {
+            const { placement: regexPlacement, depth } = getMessageFormattingRegexContext(isUser, messageId, isReasoning);
+
+            // Always override the character name
+            mes = getRegexedString(mes, regexPlacement, {
+                characterOverride: ch_name,
+                isMarkdown: true,
+                depth: depth,
+            });
+        }
+    }
+
+    if (power_user.auto_fix_generated_markdown) {
+        mes = fixMarkdown(mes, true);
+    }
+
+    if (!isSystem && power_user.encode_tags) {
+        mes = canUseNegativeLookbehind()
+            ? mes.replaceAll('<', '&lt;').replace(new RegExp('(?<!^|\\n\\s*)>', 'g'), '&gt;')
+            : mes.replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+    }
+
+    // Make sure reasoning strings are always shown, even if they include "<" or ">"
+    [power_user.reasoning.prefix, power_user.reasoning.suffix].forEach((reasoningString) => {
+        if (!reasoningString || !reasoningString.trim().length) {
+            return;
+        }
+        // Only replace the first occurrence of the reasoning string
+        if (mes.includes(reasoningString)) {
+            mes = mes.replace(reasoningString, escapeHtml(reasoningString));
+        }
+    });
+
+    if (!isSystem) {
+        // Save double quotes in tags as a special character to prevent them from being encoded
+        if (!power_user.encode_tags) {
+            mes = mes.replace(/<([^>]+)>/g, function (_, contents) {
+                return '<' + contents.replace(/"/g, '\ufffe') + '>';
+            });
+        }
+
+        mes = mes.replace(
+            /<style>[\s\S]*?<\/style>|```[\s\S]*?```|~~~[\s\S]*?~~~|``[\s\S]*?``|`[\s\S]*?`|(".*?")|(\u201C.*?\u201D)|(\u00AB.*?\u00BB)|(\u300C.*?\u300D)|(\u300E.*?\u300F)|(\uFF02.*?\uFF02)/gim,
+            function (match, p1, p2, p3, p4, p5, p6) {
+                if (p1) {
+                    // English double quotes
+                    return `<q>"${p1.slice(1, -1)}"</q>`;
+                } else if (p2) {
+                    // Curly double quotes “ ”
+                    return `<q>“${p2.slice(1, -1)}”</q>`;
+                } else if (p3) {
+                    // Guillemets « »
+                    return `<q>«${p3.slice(1, -1)}»</q>`;
+                } else if (p4) {
+                    // Corner brackets 「 」
+                    return `<q>「${p4.slice(1, -1)}」</q>`;
+                } else if (p5) {
+                    // White corner brackets 『 』
+                    return `<q>『${p5.slice(1, -1)}』</q>`;
+                } else if (p6) {
+                    // Fullwidth quotes ＂ ＂
+                    return `<q>＂${p6.slice(1, -1)}＂</q>`;
+                } else {
+                    // Return the original match if no quotes are found
+                    return match;
+                }
+            },
+        );
+
+        // Restore double quotes in tags
+        if (!power_user.encode_tags) {
+            mes = mes.replace(/\ufffe/g, '"');
+        }
+
+        mes = mes.replaceAll('\\begin{align*}', '$$');
+        mes = mes.replaceAll('\\end{align*}', '$$');
+        mes = converter.makeHtml(mes);
+
+        mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
+            // Firefox creates extra newlines from <br>s in code blocks, so we replace them before converting newlines to <br>s.
+            return match.replace(/\n/gm, '\u0000');
+        });
+        mes = mes.replace(/\u0000/g, '\n'); // Restore converted newlines
+        mes = mes.trim();
+
+        mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
+            return match.replace(/&amp;/g, '&');
+        });
+    }
+
+    if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
+        mes = mes.replace(new RegExp(`(^|\n)${escapeRegex(ch_name)}:`, 'g'), '$1');
+    }
+
+    /** @type {DOMPurify.Config} */
+    const config = {
+        RETURN_DOM: false,
+        RETURN_DOM_FRAGMENT: false,
+        RETURN_TRUSTED_TYPE: false,
+        MESSAGE_SANITIZE: true,
+        ADD_TAGS: ['custom-style'],
+        ...sanitizerOverrides,
+    };
+    mes = encodeStyleTags(mes);
+    mes = DOMPurify.sanitize(mes, config);
+    mes = decodeStyleTags(mes, { prefix: '.mes_text ' });
+
+    return mes;
+}

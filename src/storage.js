@@ -18,6 +18,7 @@ export const DEFAULT_PROFILE = Object.freeze({
     preserveTags: true,
     caseSensitive: false,
     allowNested: false,
+    fencedOutput: 'ignore',
     tags: DEFAULT_TAGS,
 });
 
@@ -25,6 +26,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
     enabled: true,
     repairOnMessage: true,
     repairExistingOnChatLoad: false,
+    displayProtection: true,
+    reasoningDisplayMode: 'plain',
     debug: false,
     defaultProfileId: DEFAULT_PROFILE.id,
     profiles: {
@@ -96,12 +99,14 @@ export function normalizeProfile(profile, fallbackId = createProfileId()) {
     const extractionMode = EXTRACTION_MODES.FROM_FIRST_TAG;
 
     return {
+        ...source,
         id: profileId,
         name: String(source.name || '未命名配置').trim() || '未命名配置',
         extractionMode,
         preserveTags: source.preserveTags !== false,
         caseSensitive: source.caseSensitive === true,
         allowNested: source.allowNested === true,
+        fencedOutput: source.fencedOutput === 'unwrap' ? 'unwrap' : 'ignore',
         tags: uniqueTags,
     };
 }
@@ -139,9 +144,12 @@ export function normalizeSettings(raw) {
     }
 
     return {
+        ...source,
         enabled: source.enabled !== false,
         repairOnMessage: source.repairOnMessage !== false,
         repairExistingOnChatLoad: source.repairExistingOnChatLoad === true,
+        displayProtection: source.displayProtection !== false,
+        reasoningDisplayMode: source.reasoningDisplayMode === 'markdown' ? 'markdown' : 'plain',
         debug: source.debug === true,
         defaultProfileId,
         profiles,

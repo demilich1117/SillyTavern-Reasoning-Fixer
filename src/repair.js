@@ -1,4 +1,4 @@
-const ENVELOPE_TAGS = ['think', 'thinking', 'reasoning', 'analysis'];
+import { codeRanges, isEscaped, rangeAt, splitLeadingReasoning } from './syntax.js';
 
 function escapeRegExp(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -30,27 +30,8 @@ function appendVisibleContent(existing, moved) {
  * @returns {{reasoning:string, content:string}|null}
  */
 export function extractReasoningEnvelope(text) {
-    const names = ENVELOPE_TAGS.map(escapeRegExp).join('|');
-    const regex = new RegExp(
-        `^\\s*<\\s*(${names})\\s*>[\\s\\S]*?<\\s*\\/\\s*\\1\\s*>([\\s\\S]*)$`,
-        'i',
-    );
-    const match = String(text ?? '').match(regex);
-    if (!match) return null;
-
-    const opening = String(text).match(new RegExp(`^\\s*<\\s*(${names})\\s*>`, 'i'));
-    if (!opening) return null;
-    const openingEnd = opening[0].length;
-    const closing = new RegExp(`<\\s*\\/\\s*${escapeRegExp(opening[1])}\\s*>`, 'i');
-    const closingMatch = String(text).slice(openingEnd).match(closing);
-    if (!closingMatch) return null;
-    const closingStart = openingEnd + closingMatch.index;
-    const closingEnd = closingStart + closingMatch[0].length;
-
-    return {
-        reasoning: trimText(String(text).slice(openingEnd, closingStart)),
-        content: trimText(String(text).slice(closingEnd)),
-    };
+    const parsed = splitLeadingReasoning(text);
+    return parsed?.complete ? { reasoning: trimText(parsed.reasoning), content: trimText(parsed.content) } : null;
 }
 
 function getTagTokenRegex(profile) {
@@ -104,7 +85,9 @@ function containsConfiguredOpeningTag(source, profile, expectedName) {
         ? String(expectedName)
         : String(expectedName).toLowerCase();
     let match;
+    const ranges = codeRanges(source);
     while ((match = tokenRegex.exec(String(source ?? ''))) !== null) {
+        if (isEscaped(source, match.index) || rangeAt(ranges, match.index)) continue;
         const isClosing = match[1] === '/';
         const isSelfClosing = match[3] === '/';
         const comparable = profile.caseSensitive === true ? match[2] : match[2].toLowerCase();
@@ -232,11 +215,17 @@ export function extractFromFirstConfiguredTag(source, profile) {
 
     let candidate = null;
     let candidateName = null;
+    const ranges = codeRanges(input);
     let match;
     while ((match = tokenRegex.exec(input)) !== null) {
         const isClosing = match[1] === '/';
         const isSelfClosing = match[3] === '/';
         if (isSelfClosing) continue;
+        if (isEscaped(input, match.index)) continue;
+        const range = rangeAt(ranges, match.index);
+        const fencedOutput = range?.kind === 'fence' && range.closed && profile.fencedOutput === 'unwrap'
+            && !input.slice(range.end).trim() && !input.slice(range.contentStart, match.index).trim();
+        if (range && !fencedOutput) continue;
 
         if (!isClosing && isLikelyTagSequenceMention(input, match)) {
             continue;
@@ -248,6 +237,7 @@ export function extractFromFirstConfiguredTag(source, profile) {
             candidate = {
                 match,
                 config: getTagConfig(profile, match[2]),
+                fence: fencedOutput ? range : null,
             };
             candidateName = comparable;
             continue;
@@ -262,18 +252,32 @@ export function extractFromFirstConfiguredTag(source, profile) {
         candidate = {
             match,
             config: getTagConfig(profile, match[2]),
+            fence: fencedOutput ? range : null,
         };
     }
 
     if (!candidate) return { remaining: input, blocks: [] };
 
+    const start = candidate.fence?.start ?? candidate.match.index;
+    const end = candidate.fence?.contentEnd ?? input.length;
+    let value = input.slice(candidate.match.index, end);
+    if (profile.preserveTags === false || candidate.config.preserve === false) {
+        value = value.slice(candidate.match[0].length);
+        // Strip only this outer pair, preserving nested and unrelated output tags.
+        const pairRegex = new RegExp(`<\\s*(\\/?)\\s*${escapeRegExp(candidate.match[2])}(?:\\s+[^<>]*?)?\\s*>`, profile.caseSensitive ? 'g' : 'gi');
+        let depth = 1;
+        for (const token of value.matchAll(pairRegex)) {
+            depth += token[1] ? -1 : 1;
+            if (depth === 0) { value = value.slice(0, token.index) + value.slice(token.index + token[0].length); break; }
+        }
+    }
     return {
-        remaining: trimText(input.slice(0, candidate.match.index)),
+        remaining: trimText(input.slice(0, start)),
         blocks: [{
-            value: input.slice(candidate.match.index),
+            value,
             tag: String(candidate.config.name),
-            start: candidate.match.index,
-            end: input.length,
+            start,
+            end: candidate.fence?.end ?? input.length,
         }],
     };
 }
@@ -334,8 +338,16 @@ function repairSingleText(message, profile) {
     }
 
     message.mes = content;
-    if (originalDisplayText !== null && trimText(originalDisplayText) === trimText(originalMes)) {
-        extra.display_text = content;
+    if (content !== originalMes && originalDisplayText !== null) {
+        if (trimText(originalDisplayText) === trimText(originalMes)) extra.display_text = content;
+        else delete extra.display_text;
+    }
+    if (reasoning !== originalReasoning) {
+        delete extra.reasoning_signature;
+        if (typeof extra.reasoning_display_text === 'string') {
+            if (trimText(extra.reasoning_display_text) === trimText(originalReasoning)) extra.reasoning_display_text = reasoning;
+            else delete extra.reasoning_display_text;
+        }
     }
     if (trimText(reasoning)) {
         extra.reasoning = reasoning;
@@ -358,6 +370,8 @@ function repairSwipes(message, profile) {
     let changed = false;
     const movedBlocks = [];
     for (let index = 0; index < message.swipes.length; index++) {
+        // TT can keep inactive swipes cold. Never turn null into empty content.
+        if (typeof message.swipes[index] !== 'string') continue;
         const info = message.swipe_info[index] || { extra: {} };
         info.extra = info.extra && typeof info.extra === 'object' ? info.extra : {};
         const swipeMessage = { mes: message.swipes[index], extra: info.extra };
@@ -381,7 +395,7 @@ function repairSwipes(message, profile) {
  * @returns {{changed:boolean,movedBlocks:Array}}
  */
 export function repairMessage(message, profile) {
-    if (!message || message.is_user === true) {
+    if (!message || message.is_user === true || message.is_system === true || message.role === 'tool') {
         return { changed: false, movedBlocks: [] };
     }
 
@@ -390,12 +404,16 @@ export function repairMessage(message, profile) {
     const changed = result.changed || swipeResult.changed;
     const movedBlocks = [...result.movedBlocks, ...swipeResult.movedBlocks];
 
-    if (changed && Array.isArray(message.swipes) && Number.isInteger(message.swipe_id)) {
+    if (result.changed && Array.isArray(message.swipes) && Number.isInteger(message.swipe_id)) {
         const selected = message.swipe_id;
         if (selected >= 0 && selected < message.swipes.length) {
             message.swipes[selected] = message.mes;
             message.swipe_info[selected] = message.swipe_info[selected] || {};
-            message.swipe_info[selected].extra = cloneValue(message.extra || {});
+            const selectedExtra = message.swipe_info[selected].extra ||= {};
+            for (const key of ['reasoning', 'reasoning_type', 'reasoning_duration', 'reasoning_signature', 'reasoning_display_text', 'display_text']) {
+                if (Object.hasOwn(message.extra, key)) selectedExtra[key] = cloneValue(message.extra[key]);
+                else delete selectedExtra[key];
+            }
         }
     }
 

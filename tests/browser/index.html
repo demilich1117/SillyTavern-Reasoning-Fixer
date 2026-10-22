@@ -1,0 +1,15 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reasoning Fixer 宿主适配测试</title><link rel="icon" href="data:,"><link rel="stylesheet" href="/style.css">
+<style>
+body{margin:0;background:#181c23;color:#e1e5ef;font:15px/1.6 system-ui}main{max-width:1100px;margin:30px auto;padding:0 20px;display:grid;grid-template-columns:390px 1fr;gap:24px}h1{font-size:20px}button,input,select{font:inherit;color:inherit;background:#272e3b;border:1px solid #67738b;border-radius:4px}button{cursor:pointer;padding:4px 10px}select,input[type=text]{padding:6px;box-sizing:border-box;width:100%}.mes{padding:20px;border:1px solid #67738b;border-radius:8px}.mes_text{border-top:1px solid #67738b;margin-top:12px;padding-top:12px}#notice{color:#a3c9e8}.inline-drawer-content{display:block}article{padding:12px;border-left:3px solid #7ba6da}pre{overflow:auto}@media(max-width:650px){main{grid-template-columns:1fr;margin:15px auto}}
+</style>
+<main><aside><h1>Reasoning Fixer · 测试宿主</h1><select id="main_api" aria-label="API"><option value="openai">openai</option></select><select id="settings_preset_openai" aria-label="预设"><option>测试预设</option></select><div id="extensions_settings2"></div><p id="notice"></p></aside><div><p>使用上游格式化函数的测试环境，不连接真实聊天。</p><div id="chat"></div></div></main>
+<script src="/node_modules/showdown/dist/showdown.min.js"></script><script src="/node_modules/dompurify/dist/purify.min.js"></script>
+<script type="module">
+import '/script.js';
+const extension = await import('/index.js');
+await extension.registerChatSurface();
+testApi.setMessage({mes:'<content>正常的正文区域。</content>',extra:{reasoning:'思考里讨论 `<content>` 标签。\n**强调** 和 <style>p{display:none}</style> 应留在思考区。'}});
+await testApi.events.emit('APP_READY');
+window.harnessReady = true;
+</script></html>

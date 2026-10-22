@@ -2,6 +2,26 @@
     padding: 0.5rem 0;
 }
 
+.reasoning-fixer-feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.65rem 0;
+    cursor: pointer;
+}
+.reasoning-fixer-feature > input { flex: 0 0 auto; margin-top: 0.2em; }
+.reasoning-fixer-feature > span { min-width: 0; }
+.reasoning-fixer-feature strong { font-size: 1em; font-weight: 600; }
+.reasoning-fixer-feature .reasoning-fixer-help { display: block; margin: 0.2rem 0 0; }
+.reasoning-fixer-quick-tags { margin: 0.6rem 0 0.85rem; }
+.reasoning-fixer-quick-tags > label { align-items: stretch; flex-direction: column; }
+.reasoning-fixer-action { margin: 0.5rem 0 1rem; }
+.reasoning-fixer-action .reasoning-fixer-help { display: block; }
+.reasoning-fixer-action .menu_button { width: auto; min-height: 2.25rem; }
+.reasoning-fixer-notice { padding: 0.6rem; border: 1px solid var(--SmartThemeBorderColor, #7776); }
+.reasoning-fixer-panel [hidden] { display: none !important; }
+.reasoning-fixer-panel :is(input, button, select, summary):focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
 .reasoning-fixer-status {
     opacity: 0.7;
     font-size: 0.82em;
@@ -14,46 +34,46 @@
 
 .reasoning-fixer-collapsible {
     margin: 0.3rem 0;
-    border: 1px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.08));
-    border-radius: 5px;
-    overflow: hidden;
+    border-top: 1px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.12));
 }
 
 .reasoning-fixer-collapsible-header {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.42rem 0.6rem;
+    width: 100%;
+    border: 0;
+    color: inherit;
+    text-align: left;
+    font-family: inherit;
+    padding: 0.65rem 0;
     cursor: pointer;
     font-weight: 600;
     font-size: 0.92em;
     user-select: none;
-    background: var(--SmartThemeBlurTintColor, rgba(255, 255, 255, 0.04));
-    transition: background 0.15s ease;
+    background: transparent;
 }
 
+/* Message sanitization prefixes custom classes; the bare forms also support
+   hosts that render native reasoning without MESSAGE_SANITIZE. */
+:is(.reasoning-fixer-plain, .custom-reasoning-fixer-plain) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-family: inherit;
+}
+:is(.reasoning-fixer-isolated, .custom-reasoning-fixer-isolated) {
+    margin: 0.4em 0;
+    padding: 0.45em 0.6em;
+    border: 1px solid var(--SmartThemeBorderColor, #7776);
+    border-radius: 0.35em;
+}
+:is(.reasoning-fixer-isolated, .custom-reasoning-fixer-isolated) > summary { cursor: pointer; }
+:is(.reasoning-fixer-isolated, .custom-reasoning-fixer-isolated)[open] > summary { margin-bottom: 0.5em; }
+:is(.reasoning-fixer-markdown, .custom-reasoning-fixer-markdown) { overflow-wrap: anywhere; }
+:is(.reasoning-fixer-markdown, .custom-reasoning-fixer-markdown) pre { max-width: 100%; overflow-x: auto; }
 .reasoning-fixer-collapsible-header:hover {
-    filter: brightness(1.2);
-}
-
-.reasoning-fixer-collapsible-icon {
-    font-size: 0.6em;
-    transition: transform 0.2s ease;
-    display: inline-block;
-    opacity: 0.7;
-}
-
-.reasoning-fixer-collapsible.open > .reasoning-fixer-collapsible-header > .reasoning-fixer-collapsible-icon {
-    transform: rotate(90deg);
+    text-decoration: underline;
 }
 
 .reasoning-fixer-collapsible-body {
-    display: none;
-    padding: 0.45rem 0.6rem 0.5rem;
-}
-
-.reasoning-fixer-collapsible.open > .reasoning-fixer-collapsible-body {
-    display: block;
+    padding: 0.2rem 0 0.5rem;
 }
 
 /* ── Fields ── */
@@ -80,8 +100,8 @@
 }
 
 .reasoning-fixer-help {
-    opacity: 0.6;
-    font-size: 0.82em;
+    opacity: 0.75;
+    font-size: 0.85em;
     line-height: 1.4;
     margin: 0.1rem 0 0.4rem;
 }
@@ -130,4 +150,9 @@
     border: none;
     border-top: 1px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.08));
     margin: 0.45rem 0;
+}
+
+@media (max-width: 480px) {
+    .reasoning-fixer-field { flex-wrap: wrap; }
+    .reasoning-fixer-field > :is(select, .text_pole) { min-width: 0; width: 100%; }
 }

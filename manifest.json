@@ -5,6 +5,9 @@
   "optional": [],
   "js": "index.js",
   "css": "style.css",
-  "author": "",
-  "version": "0.3.0"
+  "author": "demilich1117",
+  "version": "0.4.0",
+  "homePage": "https://github.com/demilich1117/SillyTavern-Reasoning-Fixer",
+  "minimum_client_version": "1.18.0",
+  "hooks": { "chatSurface": "registerChatSurface" }
 }

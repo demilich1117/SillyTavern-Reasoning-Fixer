@@ -1,23 +1,22 @@
-# Manual test cases
+# 验收用例
 
-Use these cases after copying the extension into `public/scripts/extensions/third-party`.
+自动化执行 `npm ci`、`npm test`。浏览器脚本 `tests/browser/check.cjs` 可通过 Playwright CLI 的 `run-code --filename` 执行；先启动 `node tests/browser/server.mjs`。测试页使用上游格式化/清理函数、实际扩展入口及模拟聊天事件，不连接模型。
 
-1. Generate a normal answer with no reasoning. The message must remain unchanged.
-2. Put `<think>analysis</think>visible text` in a response. The analysis must appear in Reasoning and the visible text in the main message.
-3. Put the following in the reasoning field through a compatible provider:
+真实宿主验收分别记录 ST / TT 自身版本与提交、OS、浏览器/WebView、正文正则和渲染扩展。按以下步骤复核：
 
-   ```text
-   analysis
-   <novel_header>title</novel_header>
-   <content>body</content>
-   <table_edit>table</table_edit>
-   ```
+1. 默认仅显示两个功能开关、标签、手动修复按钮和高级设置入口。键盘可打开高级设置，390px 宽度不溢出，浅色/深色主题可读。修改后刷新仍保存。
+2. 分别只开自动修复、只开显示保护、同时开启、全部关闭。显示保护不改原始 `mes` / `extra.reasoning`；自动修复关闭后手动按钮仍可用。
+3. 思考内行内代码、围栏、注释和转义中的 `<content>` 不误提取。示例后追加真正 `<content>正文</content>`，只移动正式输出。
+4. 正文开头 `<think>分析</think>**正文**`：流式中独立显示思考，正文加粗；生成结束才拆分保存。重复更新不重复追加/保存。
+5. 未闭合思考包裹中的 HTML/样式/反引号展示为原文，不执行样式、不猜测边界。普通正文保持原样。
+6. 思考之后的正文含样式、HTML、代码、实体及正文正则，结果与单独渲染正文一致。TT 不重复添加 CSS 范围或 class 前缀。
+7. 默认忽略围栏中的正文；允许围栏提取后，仅提取末尾完整且以配置标签开头的代码块，不遗留反引号。
+8. 停止生成后可修复已有正文。`<content>` 未闭合时移动后缀是现有规则；`<think>` 未闭合时不自动拆分。两类边界不能混淆。
+9. 新回复、重新生成、编辑、删除、swipe、群聊和工具调用保持数据一致；不修改用户/系统/工具结果。显示镜像同步，无关元数据保留。
+10. TT 冷 swipe 的 `null` 槽位保持不变；滚动回收/挂载后保护继续生效。生成时切换聊天，旧生成结束事件不修复新聊天。
+11. 新建、复制、删除档案；手动选择优先于预设绑定；切换预设后首页标签随当前规则更新。首页编辑保留每个标签已有的保留设置。
+12. 手动修复两次，第二次无新增修复。禁用/恢复扩展，行为与面板一致；旧总开关关闭时明确显示暂停提示。
+13. 与实际正文美化、翻译和助手 iframe 插件合用，检查格式化顺序、代码块接管、编辑与恢复。测试页没有模拟完整插件生态。
 
-   The three blocks must move to the main message in the same order.
-4. Disable tag preservation for `table_edit`. Only its inner text should remain.
-5. Send an unclosed `<content>still generating` block. It must not be moved automatically.
-6. Generate two swipes and verify that both message text and `swipe_info[*].extra` are repaired.
-7. Create two profiles, bind one to the current preset, and confirm that the binding changes when the preset changes.
-8. Select a profile manually for the current chat. It must override the preset binding until `自动：按预设选择` is selected again.
-9. Press `修复当前聊天` twice. The second run must report no new repairs and must not duplicate content.
+自动化结果与未覆盖范围见 [compatibility.md](compatibility.md)。
 
